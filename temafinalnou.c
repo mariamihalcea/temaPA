@@ -85,11 +85,92 @@ void displayTeam(teamList *headTeam)
 {
     while (headTeam!=NULL)
     {
-        printf("%d %s\n", (headTeam->t).nr, (headTeam)->t.team_name);
+        printf("%d %s\n",(headTeam->t).nr, (headTeam)->t.team_name);
         displayPlayer((headTeam->t).player);
         headTeam=headTeam->next;
     }
     printf("\n");
+}
+
+
+void teamPoints(teamList *headTeam)
+{
+    while(headTeam!=NULL)
+    {
+        (headTeam->t).team_points=0;
+        playersList *player=headTeam->t.player;
+        while(player!=NULL)
+        {
+            (headTeam->t).team_points+=player->p.points;
+            player=player->next;
+        }
+        (headTeam->t).team_points/=(headTeam->t).nr;
+       // printf("%0.1f\n",headTeam->t.team_points);
+        headTeam=headTeam->next;
+    }
+
+}
+
+void minimumPoints(teamList *headTeam, teamList **minTeam)
+{
+    *minTeam=headTeam;
+    while(headTeam->next!=NULL)
+    {
+        headTeam=headTeam->next;
+        if((*minTeam)->t.team_points>(headTeam->t.team_points))
+            (*minTeam)=headTeam;
+    }
+    //printf("Minimum points=%0.1f\n",(*minTeam)->t.team_points);
+
+}
+void deleteTeam(teamList **headTeam)
+{
+    if(*headTeam==NULL) return;
+
+    teamList *minTeam=NULL;
+    minimumPoints((*headTeam),&minTeam);
+   // printf("Min points=%0.1f",minTeam->t.team_points);
+
+    teamList *headcopy=*headTeam;
+    if(headcopy->t.team_points==minTeam->t.team_points)
+    {
+        *headTeam=(*headTeam)->next;
+        free(headcopy);
+        return;
+    }
+
+    teamList *prev=*headTeam;
+    headcopy=(*headTeam)->next;
+    while(headcopy!=NULL)
+    {
+        if(headcopy->t.team_points==minTeam->t.team_points)
+        {
+            prev->next=headcopy->next;
+            free(headcopy);
+            return;
+
+        }
+        prev=headcopy;
+        headcopy=headcopy->next;
+    }
+}
+
+void eliminationTask(teamList **headTeam, int *nrEchipe)
+{
+    int x=1;
+    while(x<(*nrEchipe))
+        x*=2;
+    x=x/2;
+    x=(*nrEchipe)-x; //nr. de echipe care trb sterse
+
+    while(x>0)
+    {
+        deleteTeam(headTeam);
+        (*nrEchipe)--;
+        x--;
+
+    }
+
 }
 
 int main()
@@ -104,33 +185,28 @@ int main()
     int i,nrEchipe,puncteJucator, nrJucatori;
     char numeJucator[30],prenumeJucator[30],numeEchipa[30];
     Team T;
-
     teamList *headTeam=NULL;
     fscanf(d,"%d", &nrEchipe);
-
     while(fscanf(d,"%d",&nrJucatori)==1)
     {
         fgets(numeEchipa,30,d);
-
         playersList *headPlayer=NULL;
-
         for(i=0; i<nrJucatori; i++)
         {
             fscanf(d,"%s",numeJucator);
             fscanf(d,"%s",prenumeJucator);
             fscanf(d,"%d",&puncteJucator);
             Player P=newPlayer(numeJucator,prenumeJucator,puncteJucator);
-
             addAtBeginningPlayer(&headPlayer,P);
-
         }
-
         T=newTeam(nrJucatori,numeEchipa,headPlayer);
         addAtBeginningTeam(&headTeam,T);
 
     }
     displayTeam(headTeam);
-
-
+    teamPoints(headTeam);
+    eliminationTask(&headTeam,&nrEchipe);
+    printf("%d\n",nrEchipe);
+    displayTeam(headTeam);
 
 }
